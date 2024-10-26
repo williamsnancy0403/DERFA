@@ -129,3 +129,21 @@
     )
 )
 
+;; Admin functions
+(define-public (deposit-funds (amount uint))
+    (begin
+        (try! (stx-transfer? amount tx-sender (as-contract tx-sender)))
+        (var-set fund-balance (+ (var-get fund-balance) amount))
+        (ok true)
+    )
+)
+
+(define-public (update-dao-owner (new-owner principal))
+    (begin
+        (asserts! (is-eq tx-sender (var-get dao-owner)) ERR-NOT-AUTHORIZED)
+        (var-set dao-owner new-owner)
+        (ok true)
+    )
+)
+
+
