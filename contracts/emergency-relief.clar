@@ -73,3 +73,30 @@
         (ok claim-id)
     )
 )
+
+(define-public (vote-on-claim (claim-id uint) (vote-type bool))
+    (let
+        (
+            (claim (unwrap! (get-claim claim-id) ERR-CLAIM-NOT-FOUND))
+            (voter-status (get-vote claim-id tx-sender))
+        )
+        (asserts! (is-none voter-status) ERR-ALREADY-VOTED)
+        (asserts! (< (- block-height (get timestamp claim)) VOTING_PERIOD) ERR-CLAIM-EXPIRED)
+
+        (map-set votes
+            { claim-id: claim-id, voter: tx-sender }
+            { voted: true }
+        )
+
+        (map-set claims claim-id
+            (merge claim {
+                yes-votes: (if vote-type (+ (get yes-votes claim) u1) (get yes-votes claim)),
+                no-votes: (if vote-type (get no-votes claim) (+ (get no-votes claim) u1)),
+                total-votes: (+ (get total-votes claim) u1)
+            })
+        )
+        (ok true)
+    )
+)
+
+
