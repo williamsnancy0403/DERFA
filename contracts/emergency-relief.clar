@@ -49,3 +49,27 @@
 (define-read-only (get-fund-balance)
     (var-get fund-balance)
 )
+
+;; Public functions
+(define-public (submit-claim (amount uint) (description (string-utf8 500)) (category (string-utf8 50)))
+    (let
+        (
+            (claim-id (var-get total-claims))
+            (new-claim {
+                beneficiary: tx-sender,
+                amount: amount,
+                description: description,
+                category: category,
+                timestamp: block-height,
+                status: "pending",
+                yes-votes: u0,
+                no-votes: u0,
+                total-votes: u0
+            })
+        )
+        (asserts! (> amount u0) ERR-INVALID-AMOUNT)
+        (map-set claims claim-id new-claim)
+        (var-set total-claims (+ claim-id u1))
+        (ok claim-id)
+    )
+)
