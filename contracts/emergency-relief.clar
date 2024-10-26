@@ -99,4 +99,33 @@
     )
 )
 
+(define-public (finalize-claim (claim-id uint))
+    (let
+        (
+            (claim (unwrap! (get-claim claim-id) ERR-CLAIM-NOT-FOUND))
+            (total-votes (get total-votes claim))
+            (yes-votes (get yes-votes claim))
+            (approval-percentage (/ (* yes-votes u100) total-votes))
+        )
+        (asserts! (>= total-votes MIN_VOTES_REQUIRED) ERR-NOT-AUTHORIZED)
+        (asserts! (>= (- block-height (get timestamp claim)) VOTING_PERIOD) ERR-CLAIM-EXPIRED)
+
+        (if (>= approval-percentage APPROVAL_THRESHOLD)
+            (begin
+                (try! (as-contract (stx-transfer? (get amount claim)
+                                                 (as-contract tx-sender)
+                                                 (get beneficiary claim))))
+                (map-set claims claim-id
+                    (merge claim { status: "approved" }))
+                (var-set fund-balance (- (var-get fund-balance) (get amount claim)))
+                (ok true)
+            )
+            (begin
+                (map-set claims claim-id
+                    (merge claim { status: "rejected" }))
+                (ok false)
+            )
+        )
+    )
+)
 
